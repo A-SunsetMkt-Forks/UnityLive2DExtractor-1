@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using AssetStudio;
@@ -143,10 +142,13 @@ namespace UnityLive2DExtractor
                 var textures = new SortedSet<string>();
                 foreach (var texture2D in texture2Ds)
                 {
-                    using (var bitmap = new Texture2DConverter(texture2D).ConvertToBitmap(true))
+                    using (var image = texture2D.ConvertToImage(flip: true))
                     {
                         textures.Add($"textures/{texture2D.m_Name}.png");
-                        bitmap.Save($"{destTexturePath}{texture2D.m_Name}.png", ImageFormat.Png);
+                        using (var file = File.OpenWrite($"{destTexturePath}{texture2D.m_Name}.png"))
+                        {
+                            image.WriteToStream(file, ImageFormat.Png);
+                        }
                     }
                 }
                 //motion
