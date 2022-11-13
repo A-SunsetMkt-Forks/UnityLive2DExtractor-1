@@ -1,30 +1,38 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFrameworks>net472;net6.0</TargetFrameworks>
-    <OutputType>Exe</OutputType>
-    <Version>1.0.7.1</Version>
-    <AssemblyTitle>UnityLive2DExtractor mod by VaDiM</AssemblyTitle>
-    <Copyright>Copyright © Perfare 2019-2022</Copyright>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>embedded</DebugType>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="SixLabors.ImageSharp" Version="2.1.3" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\AssetStudio.PInvoke\AssetStudio.PInvoke.csproj" />
-    <ProjectReference Include="..\AssetStudio\AssetStudio.csproj" />
-    <ProjectReference Include="..\Texture2DDecoderWrapper\Texture2DDecoderWrapper.csproj" />
-  </ItemGroup>
+    <PropertyGroup>
+        <TargetFrameworks>net472;net6.0</TargetFrameworks>
+        <OutputType>Exe</OutputType>
+        <Version>1.0.7.1</Version>
+        <AssemblyTitle>UnityLive2DExtractor mod by VaDiM</AssemblyTitle>
+        <Copyright>Copyright © Perfare 2019-2022</Copyright>
+        <PlatformTarget>AnyCPU</PlatformTarget>
+        <DebugType>embedded</DebugType>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="Kyaru.Texture2DDecoder.Linux" Version="0.1.0" />
+        <PackageReference Include="Kyaru.Texture2DDecoder.macOS" Version="0.1.0" />
+        <PackageReference Include="Kyaru.Texture2DDecoder.Windows" Version="0.1.0" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+        <PackageReference Include="SixLabors.ImageSharp" Version="2.1.3" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
+        <PackageReference Include="Kyaru.Texture2DDecoder" Version="0.16.40" />
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\AssetStudio.PInvoke\AssetStudio.PInvoke.csproj" />
+        <ProjectReference Include="..\AssetStudio\AssetStudio.csproj" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
+        <ProjectReference Include="..\Texture2DDecoderWrapper\Texture2DDecoderWrapper.csproj" />
+    </ItemGroup>
 
-  <Target Name="CopyExtraFiles" AfterTargets="AfterBuild">
-      <Copy SourceFiles="$(SolutionDir)Texture2DDecoderNative\bin\$(Configuration)\Win32\Texture2DDecoderNative.dll" DestinationFolder="$(TargetDir)x86" ContinueOnError="true" />
-      <Copy SourceFiles="$(SolutionDir)Texture2DDecoderNative\bin\$(Configuration)\x64\Texture2DDecoderNative.dll" DestinationFolder="$(TargetDir)x64" ContinueOnError="true" />
-  </Target>
+    <Target Name="CopyExtraFiles" AfterTargets="AfterBuild" Condition=" '$(TargetFramework)' == 'net472' ">
+        <Copy SourceFiles="$(SolutionDir)Texture2DDecoderNative\bin\$(Configuration)\Win32\Texture2DDecoderNative.dll" DestinationFolder="$(TargetDir)x86" ContinueOnError="true" />
+        <Copy SourceFiles="$(SolutionDir)Texture2DDecoderNative\bin\$(Configuration)\x64\Texture2DDecoderNative.dll" DestinationFolder="$(TargetDir)x64" ContinueOnError="true" />
+    </Target>
 
-  <Target Name="PublishExtraFiles" AfterTargets="Publish">
-      <Copy SourceFiles="$(TargetDir)x86\Texture2DDecoderNative.dll" DestinationFolder="$(PublishDir)x86" ContinueOnError="true" />
-      <Copy SourceFiles="$(TargetDir)x64\Texture2DDecoderNative.dll" DestinationFolder="$(PublishDir)x64" ContinueOnError="true" />
-  </Target>
+    <Target Name="PublishExtraFiles" AfterTargets="Publish" Condition=" '$(TargetFramework)' == 'net472' ">
+        <Copy SourceFiles="$(TargetDir)x86\Texture2DDecoderNative.dll" DestinationFolder="$(PublishDir)x86" ContinueOnError="true" />
+        <Copy SourceFiles="$(TargetDir)x64\Texture2DDecoderNative.dll" DestinationFolder="$(PublishDir)x64" ContinueOnError="true" />
+    </Target>
 </Project>
