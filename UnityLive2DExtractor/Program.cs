@@ -73,7 +73,8 @@ namespace UnityLive2DExtractor
                 var basePath = container.Substring(0, container.LastIndexOf("/"));
                 basePathList.Add(basePath);
             }
-            var lookup = containers.ToLookup(x => basePathList.Find(b => x.Value.Contains(b)), x => x.Key);
+            var lookup = containers.ToLookup(x => basePathList.Find(b => x.Value.Contains(b) && x.Value.Split('/').Any(y => y == b.Substring(b.LastIndexOf("/") + 1))),
+                                             x => x.Key);
             var baseDestPath = Path.Combine(Path.GetDirectoryName(args[0]), "Live2DOutput");
             foreach (var assets in lookup)
             {
