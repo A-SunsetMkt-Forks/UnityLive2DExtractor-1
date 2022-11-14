@@ -3,7 +3,7 @@
         <TargetFrameworks>net472;net6.0</TargetFrameworks>
         <OutputType>Exe</OutputType>
         <Version>1.0.7.1</Version>
-        <AssemblyTitle>UnityLive2DExtractor mod by VaDiM</AssemblyTitle>
+        <AssemblyTitle>UnityLive2DExtractor mod for MM by VaDiM</AssemblyTitle>
         <Copyright>Copyright © Perfare 2019-2022</Copyright>
         <PlatformTarget>AnyCPU</PlatformTarget>
         <DebugType>embedded</DebugType>
