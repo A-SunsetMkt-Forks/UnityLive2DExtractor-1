@@ -74,7 +74,8 @@ namespace UnityLive2DExtractor
                 var basePath = container.Substring(0, container.LastIndexOf("/"));
                 basePathList.Add(basePath);
             }
-            var lookup = containers.ToLookup(x => basePathList.Find(b => x.Value.Contains(b) && x.Value.Split('/').Any(y => y == b.Substring(b.LastIndexOf("/") + 1))),
+            var lookup = containers.ToLookup(x => basePathList.Find(b => (x.Value.Contains(b) || x.Value.Contains(b.Replace("model", "motion")))
+                                                                         && x.Value.Split('/').Any(y => y == b.Substring(b.LastIndexOf("/") + 1) || y == "motion")),
                                              x => x.Key);
             var totalModelCount = lookup.LongCount(x => x.Key != null);
             Console.WriteLine($"Found {totalModelCount} model(s)");
