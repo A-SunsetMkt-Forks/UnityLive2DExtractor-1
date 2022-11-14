@@ -66,6 +66,7 @@ namespace UnityLive2DExtractor
                     }
                 }
             }
+
             var basePathList = new List<string>();
             foreach (var cubismMoc in cubismMocs)
             {
@@ -75,16 +76,23 @@ namespace UnityLive2DExtractor
             }
             var lookup = containers.ToLookup(x => basePathList.Find(b => x.Value.Contains(b) && x.Value.Split('/').Any(y => y == b.Substring(b.LastIndexOf("/") + 1))),
                                              x => x.Key);
+            var totalModelCount = lookup.LongCount(x => x.Key != null);
+            Console.WriteLine($"Found {totalModelCount} model(s)");
+            var modelCounter = 0;
             var baseDestPath = Path.Combine(Path.GetDirectoryName(args[0]), "Live2DOutput");
             foreach (var assets in lookup)
             {
-                var key = assets.Key;
-                if (key == null)
+                var container = assets.Key;
+                if (container == null)
                     continue;
-                var name = key.Substring(key.LastIndexOf("/") + 1);
-                Console.WriteLine($"Extract {key}");
+                var modelName = container.Substring(container.LastIndexOf("/") + 1);
+                Console.Write($"[{++modelCounter}/{totalModelCount}] ");
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                Console.Write($"{container}: ");
+                Console.ResetColor();
+                Console.Write("Extracting...\n");
 
-                var destPath = Path.Combine(baseDestPath, key) + Path.DirectorySeparatorChar;
+                var destPath = Path.Combine(baseDestPath, container) + Path.DirectorySeparatorChar;
                 var destTexturePath = Path.Combine(destPath, "textures") + Path.DirectorySeparatorChar;
                 var destAnimationPath = Path.Combine(destPath, "motions") + Path.DirectorySeparatorChar;
                 Directory.CreateDirectory(destPath);
@@ -98,21 +106,20 @@ namespace UnityLive2DExtractor
 
                 foreach (var asset in assets)
                 {
-                    if (asset is MonoBehaviour m_MonoBehaviour)
+                    switch (asset)
                     {
-                        monoBehaviours.Add(m_MonoBehaviour);
-                    }
-                    else if (asset is Texture2D m_Texture2D)
-                    {
-                        texture2Ds.Add(m_Texture2D);
-                    }
-                    else if (asset is GameObject m_GameObject)
-                    {
-                        gameObjects.Add(m_GameObject);
-                    }
-                    else if (asset is AnimationClip m_AnimationClip)
-                    {
-                        animationClips.Add(m_AnimationClip);
+                        case MonoBehaviour m_MonoBehaviour:
+                            monoBehaviours.Add(m_MonoBehaviour);
+                            break;
+                        case Texture2D m_Texture2D:
+                            texture2Ds.Add(m_Texture2D);
+                            break;
+                        case GameObject m_GameObject:
+                            gameObjects.Add(m_GameObject);
+                            break;
+                        case AnimationClip m_AnimationClip:
+                            animationClips.Add(m_AnimationClip);
+                            break;
                     }
                 }
 
@@ -130,7 +137,7 @@ namespace UnityLive2DExtractor
                     try
                     {
                         var buff = ParsePhysics(physics);
-                        File.WriteAllText($"{destPath}{name}.physics3.json", buff);
+                        File.WriteAllText($"{destPath}{modelName}.physics3.json", buff);
                     }
                     catch
                     {
@@ -138,6 +145,7 @@ namespace UnityLive2DExtractor
                         physics = null;
                     }
                 }
+
                 //moc
                 var moc = monoBehaviours.First(x =>
                 {
@@ -147,7 +155,8 @@ namespace UnityLive2DExtractor
                     }
                     return false;
                 });
-                File.WriteAllBytes($"{destPath}{name}.moc3", ParseMoc(moc));
+                File.WriteAllBytes($"{destPath}{modelName}.moc3", ParseMoc(moc));
+
                 //texture
                 var textures = new SortedSet<string>();
                 foreach (var texture2D in texture2Ds)
@@ -161,6 +170,7 @@ namespace UnityLive2DExtractor
                         }
                     }
                 }
+
                 //motion
                 var motions = new List<string>();
                 var rootTransform = gameObjects[0].m_Transform;
@@ -264,6 +274,7 @@ namespace UnityLive2DExtractor
                     motions.Add($"motions/{animation.Name}.motion3.json");
                     File.WriteAllText($"{destAnimationPath}{animation.Name}.motion3.json", JsonConvert.SerializeObject(json, Formatting.Indented, new MyJsonConverter()));
                 }
+
                 //model
                 var job = new JObject();
                 var jarray = new JArray();
@@ -318,7 +329,7 @@ namespace UnityLive2DExtractor
                     Version = 3,
                     FileReferences = new CubismModel3Json.SerializableFileReferences
                     {
-                        Moc = $"{name}.moc3",
+                        Moc = $"{modelName}.moc3",
                         Textures = textures.ToArray(),
                         //Physics = $"{name}.physics3.json",
                         Motions = job
@@ -327,11 +338,13 @@ namespace UnityLive2DExtractor
                 };
                 if (physics != null)
                 {
-                    model3.FileReferences.Physics = $"{name}.physics3.json";
+                    model3.FileReferences.Physics = $"{modelName}.physics3.json";
                 }
-                File.WriteAllText($"{destPath}{name}.model3.json", JsonConvert.SerializeObject(model3, Formatting.Indented));
+                File.WriteAllText($"{destPath}{modelName}.model3.json", JsonConvert.SerializeObject(model3, Formatting.Indented));
             }
+
             Console.WriteLine("Done!");
+            Console.WriteLine("Press any key to exit");
             Console.Read();
         }
 
