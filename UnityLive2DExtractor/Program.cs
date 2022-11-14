@@ -345,7 +345,7 @@ namespace UnityLive2DExtractor
 
             Console.WriteLine("Done!");
             Console.WriteLine("Press any key to exit");
-            Console.Read();
+            Console.ReadKey();
         }
 
         private static string ParsePhysics(MonoBehaviour physics)
