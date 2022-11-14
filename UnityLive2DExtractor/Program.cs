@@ -126,7 +126,16 @@ namespace UnityLive2DExtractor
                 });
                 if (physics != null)
                 {
-                    File.WriteAllText($"{destPath}{name}.physics3.json", ParsePhysics(physics));
+                    try
+                    {
+                        var buff = ParsePhysics(physics);
+                        File.WriteAllText($"{destPath}{name}.physics3.json", buff);
+                    }
+                    catch
+                    {
+                        Console.WriteLine($"Error in parsing physics data.\n");
+                        physics = null;
+                    }
                 }
                 //moc
                 var moc = monoBehaviours.First(x =>
