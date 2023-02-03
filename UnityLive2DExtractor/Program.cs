@@ -30,6 +30,9 @@ namespace UnityLive2DExtractor
                 Console.WriteLine("No Unity file can be loaded.\n");
                 return;
             }
+            if (args[0].EndsWith($"{Path.DirectorySeparatorChar}"))
+                args[0] = args[0].Remove(args[0].Length - 1);
+
             var containers = new Dictionary<AssetStudio.Object, string>();
             var cubismMocs = new List<MonoBehaviour>();
             foreach (var assetsFile in assetsManager.assetsFileList)
