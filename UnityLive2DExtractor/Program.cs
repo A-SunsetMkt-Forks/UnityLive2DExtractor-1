@@ -13,14 +13,23 @@ namespace UnityLive2DExtractor
         static void Main(string[] args)
         {
             if (args.Length != 1)
+            {
+                Console.WriteLine("Usage: \nUnityLive2DExtractor <path to a Live2D folder>\n");
                 return;
+            }
             if (!Directory.Exists(args[0]))
+            {
+                Console.WriteLine($"Invalid input path \"{args[0]}\". \nSpecified folder was not found.\n");
                 return;
+            }
             Console.WriteLine($"Loading...");
             var assetsManager = new AssetsManager();
             assetsManager.LoadFolder(args[0]);
             if (assetsManager.assetsFileList.Count == 0)
+            {
+                Console.WriteLine("No Unity file can be loaded.\n");
                 return;
+            }
             var containers = new Dictionary<AssetStudio.Object, string>();
             var cubismMocs = new List<MonoBehaviour>();
             foreach (var assetsFile in assetsManager.assetsFileList)
@@ -343,9 +352,9 @@ namespace UnityLive2DExtractor
                 File.WriteAllText($"{destPath}{modelName}.model3.json", JsonConvert.SerializeObject(model3, Formatting.Indented));
             }
 
-            Console.WriteLine("Done!");
-            Console.WriteLine("Press any key to exit");
-            Console.ReadKey();
+            Console.WriteLine($"\nFinished extracting to the \"{baseDestPath}\" folder.");
+            Console.Write("\nPress any key to exit\r");
+            Console.ReadKey(intercept:true);
         }
 
         private static string ParsePhysics(MonoBehaviour physics)
