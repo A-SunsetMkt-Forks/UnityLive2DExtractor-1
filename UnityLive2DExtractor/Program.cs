@@ -99,10 +99,10 @@ namespace UnityLive2DExtractor
                     continue;
                 var modelName = container.Substring(container.LastIndexOf("/") + 1);
                 Console.Write($"[{++modelCounter}/{totalModelCount}] ");
-                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                Console.ForegroundColor = ConsoleColor.Yellow;
                 Console.Write($"{container}: ");
                 Console.ResetColor();
-                Console.Write("Extracting...\n");
+                Console.WriteLine("Extracting...");
 
                 var destPath = Path.Combine(baseDestPath, container) + Path.DirectorySeparatorChar;
                 var destTexturePath = Path.Combine(destPath, "textures") + Path.DirectorySeparatorChar;
@@ -355,9 +355,14 @@ namespace UnityLive2DExtractor
                 File.WriteAllText($"{destPath}{modelName}.model3.json", JsonConvert.SerializeObject(model3, Formatting.Indented));
             }
 
-            Console.WriteLine($"\nFinished extracting to the \"{Path.GetFullPath(baseDestPath)}\" folder.");
+            Console.Write($"\nFinished extracting to the ");
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Write($"\"{Path.GetFullPath(baseDestPath)}\" ");
+            Console.ResetColor();
+            Console.WriteLine("folder.");
+
             Console.Write("\nPress any key to exit\r");
-            Console.ReadKey(intercept:true);
+            Console.ReadKey(intercept: true);
         }
 
         private static string ParsePhysics(MonoBehaviour physics)
