@@ -8,29 +8,30 @@ namespace AssetStudio.PInvoke
 {
     public static class DllLoader
     {
-
         public static void PreloadDll(string dllName)
         {
-            var dllDir = GetDirectedDllDirectory();
+            var localPath = Process.GetCurrentProcess().MainModule.FileName;
+            var localDir = Path.GetDirectoryName(localPath);
 
             // Not using OperatingSystem.Platform.
             // See: https://www.mono-project.com/docs/faq/technical/#how-to-detect-the-execution-platform
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                Win32.LoadDll(dllDir, dllName);
+#if NETFRAMEWORK
+                Win32.LoadDll(GetDirectedDllDirectory(localDir), dllName);
+#endif
             }
             else
             {
-                Posix.LoadDll(dllDir, dllName);
+                Posix.LoadDll(localDir, dllName);
             }
         }
 
-        private static string GetDirectedDllDirectory()
+        private static string GetDirectedDllDirectory(string localDir)
         {
-            var localPath = Process.GetCurrentProcess().MainModule.FileName;
-            var localDir = Path.GetDirectoryName(localPath);
-
-            var subDir = Environment.Is64BitProcess ? "x64" : "x86";
+            var win32Path = Path.Combine("runtimes", "win-x86", "native");
+            var win64Path = Path.Combine("runtimes", "win-x64", "native");
+            var subDir = Environment.Is64BitProcess ? win64Path : win32Path;
 
             var directedDllDir = Path.Combine(localDir, subDir);
 
