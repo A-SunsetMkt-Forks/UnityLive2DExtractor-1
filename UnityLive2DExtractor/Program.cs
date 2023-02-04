@@ -355,7 +355,7 @@ namespace UnityLive2DExtractor
                 File.WriteAllText($"{destPath}{modelName}.model3.json", JsonConvert.SerializeObject(model3, Formatting.Indented));
             }
 
-            Console.WriteLine($"\nFinished extracting to the \"{baseDestPath}\" folder.");
+            Console.WriteLine($"\nFinished extracting to the \"{Path.GetFullPath(baseDestPath)}\" folder.");
             Console.Write("\nPress any key to exit\r");
             Console.ReadKey(intercept:true);
         }
