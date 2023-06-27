@@ -184,7 +184,7 @@ namespace UnityLive2DExtractor
                 }
 
                 //motion
-                var motions = new List<string>();
+                var motions = new JArray();
                 var rootTransform = gameObjects[0].m_Transform;
                 while (rootTransform.m_Father.TryGet(out var m_Father))
                 {
@@ -283,21 +283,15 @@ namespace UnityLive2DExtractor
                     }
                     json.Meta.TotalUserDataSize = totalUserDataSize;
 
-                    motions.Add($"motions/{animation.Name}.motion3.json");
+                    motions.Add(new JObject
+                    {
+                        { "Name", animation.Name },
+                        { "File", $"motions/{animation.Name}.motion3.json" }
+                    });
                     File.WriteAllText($"{destAnimationPath}{animation.Name}.motion3.json", JsonConvert.SerializeObject(json, Formatting.Indented, new MyJsonConverter()));
                 }
 
                 //model
-                var job = new JObject();
-                var jarray = new JArray();
-                foreach (var motion in motions)
-                {
-                    var tempjob = new JObject();
-                    tempjob["File"] = motion;
-                    jarray.Add(tempjob);
-                }
-                job[""] = jarray;
-
                 var groups = new List<CubismModel3Json.SerializableGroup>();
                 var eyeBlinkParameters = monoBehaviours.Where(x =>
                 {
@@ -339,12 +333,12 @@ namespace UnityLive2DExtractor
                 var model3 = new CubismModel3Json
                 {
                     Version = 3,
+                    Name = modelName,
                     FileReferences = new CubismModel3Json.SerializableFileReferences
                     {
                         Moc = $"{modelName}.moc3",
                         Textures = textures.ToArray(),
-                        //Physics = $"{name}.physics3.json",
-                        Motions = job
+                        Motions = new JObject { { "", motions } }
                     },
                     Groups = groups.ToArray()
                 };
