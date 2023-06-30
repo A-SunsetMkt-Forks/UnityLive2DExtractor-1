@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Linq;
 
 namespace UnityLive2DExtractor
 {
@@ -20,6 +15,7 @@ namespace UnityLive2DExtractor
             public string[] Textures;
             public string Physics;
             public JObject Motions;
+            public JArray Expressions;
         }
 
         public class SerializableGroup

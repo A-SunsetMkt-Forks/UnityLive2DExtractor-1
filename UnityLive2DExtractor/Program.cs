@@ -106,10 +106,10 @@ namespace UnityLive2DExtractor
 
                 var destPath = Path.Combine(baseDestPath, container) + Path.DirectorySeparatorChar;
                 var destTexturePath = Path.Combine(destPath, "textures") + Path.DirectorySeparatorChar;
-                var destAnimationPath = Path.Combine(destPath, "motions") + Path.DirectorySeparatorChar;
+                var destMotionPath = Path.Combine(destPath, "motions") + Path.DirectorySeparatorChar;
+                var destExpressionPath = Path.Combine(destPath, "expressions") + Path.DirectorySeparatorChar;
                 Directory.CreateDirectory(destPath);
                 Directory.CreateDirectory(destTexturePath);
-                Directory.CreateDirectory(destAnimationPath);
 
                 var monoBehaviours = new List<MonoBehaviour>();
                 var texture2Ds = new List<Texture2D>();
@@ -192,6 +192,10 @@ namespace UnityLive2DExtractor
                 }
                 rootTransform.m_GameObject.TryGet(out var rootGameObject);
                 var converter = new CubismMotion3Converter(rootGameObject, animationClips.ToArray());
+                if (converter.AnimationList.Count > 0 )
+                {
+                    Directory.CreateDirectory(destMotionPath);
+                }
                 foreach (ImportedKeyframedAnimation animation in converter.AnimationList)
                 {
                     var json = new CubismMotion3Json
@@ -288,7 +292,31 @@ namespace UnityLive2DExtractor
                         { "Name", animation.Name },
                         { "File", $"motions/{animation.Name}.motion3.json" }
                     });
-                    File.WriteAllText($"{destAnimationPath}{animation.Name}.motion3.json", JsonConvert.SerializeObject(json, Formatting.Indented, new MyJsonConverter()));
+                    File.WriteAllText($"{destMotionPath}{animation.Name}.motion3.json", JsonConvert.SerializeObject(json, Formatting.Indented, new MyJsonConverter()));
+                }
+
+                //expression
+                var expressions = new JArray();
+                var monoBehaviourArray = monoBehaviours.Where(x => x.m_Name.EndsWith(".exp3")).ToArray();
+                if (monoBehaviourArray.Length > 0)
+                {
+                    Directory.CreateDirectory(destExpressionPath);
+                }
+                foreach (var monoBehaviour in monoBehaviourArray)
+                {
+                    var fullName = monoBehaviour.m_Name;
+                    var expressionName = fullName.Replace(".exp3", "");
+                    var expressionObj = monoBehaviour.ToType();
+                    if (expressionObj == null)
+                        continue;
+                    var expression = JsonConvert.DeserializeObject<CubismExpression3Json>(JsonConvert.SerializeObject(expressionObj));
+
+                    expressions.Add(new JObject
+                    {
+                        { "Name", expressionName },
+                        { "File", $"expressions/{fullName}.json" }
+                    });
+                    File.WriteAllText($"{destExpressionPath}{fullName}.json", JsonConvert.SerializeObject(expression, Formatting.Indented));
                 }
 
                 //model
@@ -338,7 +366,8 @@ namespace UnityLive2DExtractor
                     {
                         Moc = $"{modelName}.moc3",
                         Textures = textures.ToArray(),
-                        Motions = new JObject { { "", motions } }
+                        Motions = new JObject { { "", motions } },
+                        Expressions = expressions,
                     },
                     Groups = groups.ToArray()
                 };
