@@ -321,42 +321,56 @@ namespace UnityLive2DExtractor
 
                 //model
                 var groups = new List<CubismModel3Json.SerializableGroup>();
+
                 var eyeBlinkParameters = monoBehaviours.Where(x =>
                 {
                     x.m_Script.TryGet(out var m_Script);
-                    return m_Script.m_ClassName == "CubismEyeBlinkParameter";
+                    return m_Script?.m_ClassName == "CubismEyeBlinkParameter";
                 }).Select(x =>
                 {
                     x.m_GameObject.TryGet(out var m_GameObject);
-                    return m_GameObject.m_Name;
-                }).ToArray();
-                if (eyeBlinkParameters.Length > 0)
+                    return m_GameObject?.m_Name;
+                }).ToHashSet();
+                if (eyeBlinkParameters.Count == 0)
                 {
-                    groups.Add(new CubismModel3Json.SerializableGroup
+                    eyeBlinkParameters = gameObjects.Where(x =>
                     {
-                        Target = "Parameter",
-                        Name = "EyeBlink",
-                        Ids = eyeBlinkParameters
-                    });
-                }
+                        return x.m_Name.ToLower().Contains("eye") 
+                        && x.m_Name.ToLower().Contains("open") 
+                        && (x.m_Name.ToLower().Contains('l') || x.m_Name.ToLower().Contains('r'));
+                    }).Select(x => x.m_Name).ToHashSet();
+                }                
+                groups.Add(new CubismModel3Json.SerializableGroup
+                {
+                    Target = "Parameter",
+                    Name = "EyeBlink",
+                    Ids = eyeBlinkParameters.ToArray()
+                });
+
                 var lipSyncParameters = monoBehaviours.Where(x =>
                 {
                     x.m_Script.TryGet(out var m_Script);
-                    return m_Script.m_ClassName == "CubismMouthParameter";
+                    return m_Script?.m_ClassName == "CubismMouthParameter";
                 }).Select(x =>
                 {
                     x.m_GameObject.TryGet(out var m_GameObject);
-                    return m_GameObject.m_Name;
-                }).ToArray();
-                if (lipSyncParameters.Length > 0)
+                    return m_GameObject?.m_Name;
+                }).ToHashSet();
+                if (lipSyncParameters.Count == 0)
                 {
-                    groups.Add(new CubismModel3Json.SerializableGroup
+                    lipSyncParameters = gameObjects.Where(x =>
                     {
-                        Target = "Parameter",
-                        Name = "LipSync",
-                        Ids = lipSyncParameters
-                    });
+                        return x.m_Name.ToLower().Contains("mouth") 
+                        && x.m_Name.ToLower().Contains("open") 
+                        && x.m_Name.ToLower().Contains('y');
+                    }).Select(x => x.m_Name).ToHashSet();
                 }
+                groups.Add(new CubismModel3Json.SerializableGroup
+                {
+                    Target = "Parameter",
+                    Name = "LipSync",
+                    Ids = lipSyncParameters.ToArray()
+                });
 
                 var model3 = new CubismModel3Json
                 {
