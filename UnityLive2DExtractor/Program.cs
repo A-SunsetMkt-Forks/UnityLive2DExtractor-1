@@ -161,9 +161,9 @@ namespace UnityLive2DExtractor
                         var buff = ParsePhysics(physics);
                         File.WriteAllText($"{destPath}{modelName}.physics3.json", buff);
                     }
-                    catch
+                    catch (Exception e)
                     {
-                        Console.WriteLine($"Error in parsing physics data.\n");
+                        Logger.Warning($"Error in parsing physics data: {e.Message}");
                         physics = null;
                     }
                 }
@@ -417,11 +417,10 @@ namespace UnityLive2DExtractor
 
         private static string ParsePhysics(MonoBehaviour physics)
         {
-            var reader = physics.reader;
-            reader.Reset();
-            reader.Position += 28; //PPtr<GameObject> m_GameObject, m_Enabled, PPtr<MonoScript>
-            reader.ReadAlignedString(); //m_Name
-            var cubismPhysicsRig = new CubismPhysicsRig(reader);
+            var physicsObj = physics.ToType();
+            if (physicsObj == null)
+                throw new Exception("MonoBehaviour is not readable.");
+            var cubismPhysicsRig = JsonConvert.DeserializeObject<CubismPhysics>(JsonConvert.SerializeObject(physicsObj))._rig;
 
             var physicsSettings = new CubismPhysics3Json.SerializablePhysicsSettings[cubismPhysicsRig.SubRigs.Length];
             for (int i = 0; i < physicsSettings.Length; i++)
@@ -486,11 +485,7 @@ namespace UnityLive2DExtractor
                     var particles = subRigs.Particles[j];
                     physicsSettings[i].Vertices[j] = new CubismPhysics3Json.SerializableVertex
                     {
-                        Position = new CubismPhysics3Json.SerializableVector2
-                        {
-                            X = particles.InitialPosition.X,
-                            Y = particles.InitialPosition.Y
-                        },
+                        Position = particles.InitialPosition,
                         Mobility = particles.Mobility,
                         Delay = particles.Delay,
                         Acceleration = particles.Acceleration,
@@ -518,16 +513,8 @@ namespace UnityLive2DExtractor
                     VertexCount = cubismPhysicsRig.SubRigs.Sum(x => x.Particles.Length),
                     EffectiveForces = new CubismPhysics3Json.SerializableEffectiveForces
                     {
-                        Gravity = new CubismPhysics3Json.SerializableVector2
-                        {
-                            X = 0,
-                            Y = -1
-                        },
-                        Wind = new CubismPhysics3Json.SerializableVector2
-                        {
-                            X = 0,
-                            Y = 0
-                        }
+                        Gravity = cubismPhysicsRig.Gravity,
+                        Wind = cubismPhysicsRig.Wind
                     },
                     PhysicsDictionary = physicsDictionary
                 },

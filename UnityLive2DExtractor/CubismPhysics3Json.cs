@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using AssetStudio;
 
 namespace UnityLive2DExtractor
 {
@@ -11,12 +7,6 @@ namespace UnityLive2DExtractor
         public int Version;
         public SerializableMeta Meta;
         public SerializablePhysicsSettings[] PhysicsSettings;
-
-        public class SerializableVector2
-        {
-            public float X;
-            public float Y;
-        }
 
         public class SerializableNormalizationValue
         {
@@ -51,7 +41,7 @@ namespace UnityLive2DExtractor
 
         public class SerializableVertex
         {
-            public SerializableVector2 Position;
+            public Vector2 Position;
             public float Mobility;
             public float Delay;
             public float Acceleration;
@@ -85,8 +75,8 @@ namespace UnityLive2DExtractor
 
         public class SerializableEffectiveForces
         {
-            public SerializableVector2 Gravity;
-            public SerializableVector2 Wind;
+            public Vector2 Gravity;
+            public Vector2 Wind;
         }
 
         public class SerializablePhysicsDictionary

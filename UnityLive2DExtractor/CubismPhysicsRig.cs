@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using AssetStudio;
+﻿using AssetStudio;
 
 namespace UnityLive2DExtractor
 {
@@ -10,25 +7,12 @@ namespace UnityLive2DExtractor
         public float Maximum;
         public float Minimum;
         public float Default;
-
-        public CubismPhysicsNormalizationTuplet(BinaryReader reader)
-        {
-            Maximum = reader.ReadSingle();
-            Minimum = reader.ReadSingle();
-            Default = reader.ReadSingle();
-        }
     }
 
     public class CubismPhysicsNormalization
     {
         public CubismPhysicsNormalizationTuplet Position;
         public CubismPhysicsNormalizationTuplet Angle;
-
-        public CubismPhysicsNormalization(BinaryReader reader)
-        {
-            Position = new CubismPhysicsNormalizationTuplet(reader);
-            Angle = new CubismPhysicsNormalizationTuplet(reader);
-        }
     }
 
     public class CubismPhysicsParticle
@@ -38,15 +22,6 @@ namespace UnityLive2DExtractor
         public float Delay;
         public float Acceleration;
         public float Radius;
-
-        public CubismPhysicsParticle(BinaryReader reader)
-        {
-            InitialPosition = reader.ReadVector2();
-            Mobility = reader.ReadSingle();
-            Delay = reader.ReadSingle();
-            Acceleration = reader.ReadSingle();
-            Radius = reader.ReadSingle();
-        }
     }
 
     public class CubismPhysicsOutput
@@ -58,20 +33,7 @@ namespace UnityLive2DExtractor
         public float Weight;
         public CubismPhysicsSourceComponent SourceComponent;
         public bool IsInverted;
-
-        public CubismPhysicsOutput(BinaryReader reader)
-        {
-            DestinationId = reader.ReadAlignedString();
-            ParticleIndex = reader.ReadInt32();
-            TranslationScale = reader.ReadVector2();
-            AngleScale = reader.ReadSingle();
-            Weight = reader.ReadSingle();
-            SourceComponent = (CubismPhysicsSourceComponent)reader.ReadInt32();
-            IsInverted = reader.ReadBoolean();
-            reader.AlignStream();
-        }
     }
-
 
     public enum CubismPhysicsSourceComponent
     {
@@ -88,17 +50,6 @@ namespace UnityLive2DExtractor
         public float Weight;
         public CubismPhysicsSourceComponent SourceComponent;
         public bool IsInverted;
-
-        public CubismPhysicsInput(BinaryReader reader)
-        {
-            SourceId = reader.ReadAlignedString();
-            ScaleOfTranslation = reader.ReadVector2();
-            AngleScale = reader.ReadSingle();
-            Weight = reader.ReadSingle();
-            SourceComponent = (CubismPhysicsSourceComponent)reader.ReadInt32();
-            IsInverted = reader.ReadBoolean();
-            reader.AlignStream();
-        }
     }
 
     public class CubismPhysicsSubRig
@@ -107,43 +58,18 @@ namespace UnityLive2DExtractor
         public CubismPhysicsOutput[] Output;
         public CubismPhysicsParticle[] Particles;
         public CubismPhysicsNormalization Normalization;
-
-        public CubismPhysicsSubRig(BinaryReader reader)
-        {
-            var numInput = reader.ReadInt32();
-            Input = new CubismPhysicsInput[numInput];
-            for (int i = 0; i < numInput; i++)
-            {
-                Input[i] = new CubismPhysicsInput(reader);
-            }
-            var numOutput = reader.ReadInt32();
-            Output = new CubismPhysicsOutput[numOutput];
-            for (int i = 0; i < numOutput; i++)
-            {
-                Output[i] = new CubismPhysicsOutput(reader);
-            }
-            var numParticles = reader.ReadInt32();
-            Particles = new CubismPhysicsParticle[numParticles];
-            for (int i = 0; i < numParticles; i++)
-            {
-                Particles[i] = new CubismPhysicsParticle(reader);
-            }
-            Normalization = new CubismPhysicsNormalization(reader);
-        }
     }
 
     public class CubismPhysicsRig
     {
         public CubismPhysicsSubRig[] SubRigs;
+        public Vector2 Gravity = new Vector2(0, -1);
+        public Vector2 Wind;
+    }
 
-        public CubismPhysicsRig(BinaryReader reader)
-        {
-            var numSubRigs = reader.ReadInt32();
-            SubRigs = new CubismPhysicsSubRig[numSubRigs];
-            for (int i = 0; i < numSubRigs; i++)
-            {
-                SubRigs[i] = new CubismPhysicsSubRig(reader);
-            }
-        }
+    public class CubismPhysics
+    {
+        public string m_Name;
+        public CubismPhysicsRig _rig;
     }
 }
