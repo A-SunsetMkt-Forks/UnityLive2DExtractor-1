@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 
+#if NETFRAMEWORK
 namespace AssetStudio.PInvoke
 {
     public static class DllLoader
@@ -17,13 +18,7 @@ namespace AssetStudio.PInvoke
             // See: https://www.mono-project.com/docs/faq/technical/#how-to-detect-the-execution-platform
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-#if NETFRAMEWORK
                 Win32.LoadDll(GetDirectedDllDirectory(localDir), dllName);
-#endif
-            }
-            else
-            {
-                Posix.LoadDll(localDir, dllName);
             }
         }
 
@@ -65,61 +60,7 @@ namespace AssetStudio.PInvoke
 
             private const uint LOAD_LIBRARY_SEARCH_DEFAULT_DIRS = 0x1000;
             private const uint LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR = 0x100;
-
         }
-
-        private static class Posix
-        {
-
-            internal static void LoadDll(string dllDir, string dllName)
-            {
-                string dllExtension;
-
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                {
-                    dllExtension = ".so";
-                }
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                {
-                    dllExtension = ".dylib";
-                }
-                else
-                {
-                    throw new NotSupportedException();
-                }
-
-                var dllFileName = $"lib{dllName}{dllExtension}";
-                var directedDllPath = Path.Combine(dllDir, dllFileName);
-
-                const int ldFlags = RTLD_NOW | RTLD_GLOBAL;
-                var hLibrary = DlOpen(directedDllPath, ldFlags);
-
-                if (hLibrary == IntPtr.Zero)
-                {
-                    var pErrStr = DlError();
-                    // `PtrToStringAnsi` always uses the specific constructor of `String` (see dotnet/core#2325),
-                    // which in turn interprets the byte sequence with system default codepage. On OSX and Linux
-                    // the codepage is UTF-8 so the error message should be handled correctly.
-                    var errorMessage = Marshal.PtrToStringAnsi(pErrStr);
-
-                    throw new DllNotFoundException(errorMessage);
-                }
-            }
-
-            // OSX and most Linux OS use LP64 so `int` is still 32-bit even on 64-bit platforms.
-            // void *dlopen(const char *filename, int flag);
-            [DllImport("libdl", EntryPoint = "dlopen")]
-            private static extern IntPtr DlOpen([MarshalAs(UnmanagedType.LPStr)] string fileName, int flags);
-
-            // char *dlerror(void);
-            [DllImport("libdl", EntryPoint = "dlerror")]
-            private static extern IntPtr DlError();
-
-            private const int RTLD_LAZY = 0x1;
-            private const int RTLD_NOW = 0x2;
-            private const int RTLD_GLOBAL = 0x100;
-
-        }
-
     }
 }
+#endif

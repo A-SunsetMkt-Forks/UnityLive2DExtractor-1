@@ -16,6 +16,13 @@ namespace AssetStudio
     }
 
     [Flags]
+    public enum CnEncryptionFlags
+    {
+        OldFlag = 0x200,
+        NewFlag = 0x400
+    }
+
+    [Flags]
     public enum StorageBlockFlags
     {
         CompressionTypeMask = 0x3f,
@@ -66,7 +73,7 @@ namespace AssetStudio
 
         public StreamFile[] fileList;
 
-        public BundleFile(FileReader reader)
+        public BundleFile(FileReader reader, string specUnityVer = "")
         {
             m_Header = new Header();
             m_Header.signature = reader.ReadStringToNull();
@@ -92,7 +99,31 @@ namespace AssetStudio
                     break;
                 case "UnityFS":
                     ReadHeader(reader);
-                    ReadBlocksInfoAndDirectory(reader);
+
+                    bool isUnityCnEnc = false;
+                    string unityVer = string.IsNullOrEmpty(specUnityVer) ? m_Header.unityRevision : specUnityVer;
+                    int[] ver = new string(unityVer.SkipWhile(x => !char.IsDigit(x)).TakeWhile(x => char.IsDigit(x) || x == '.').ToArray()).Split('.').Select(x => int.Parse(x)).ToArray();
+                    if (ver[0] != 0)
+                    {
+                        // https://issuetracker.unity3d.com/issues/files-within-assetbundles-do-not-start-on-aligned-boundaries-breaking-patching-on-nintendo-switch
+                        if (ver[0] < 2020 ||
+                           (ver[0] == 2020 && ver[1] <= 3 && ver[2] < 34) ||
+                           (ver[0] == 2021 && ver[1] <= 3 && ver[2] < 2) ||
+                           (ver[0] == 2022 && ver[1] <= 1 && ver[2] < 1))
+                        {
+                            isUnityCnEnc = ((CnEncryptionFlags)m_Header.flags & CnEncryptionFlags.OldFlag) != 0;
+                        }
+                        else
+                        {
+                            isUnityCnEnc = ((CnEncryptionFlags)m_Header.flags & CnEncryptionFlags.NewFlag) != 0;                    
+                        }
+                    }
+                    if (isUnityCnEnc)
+                    {
+                        throw new NotSupportedException("Unsupported bundle file. UnityCN encryption was detected.");
+                    }
+
+                    ReadBlocksInfoAndDirectory(reader, ver);
                     using (var blocksStream = CreateBlocksStream(reader.FullPath))
                     {
                         ReadBlocks(reader, blocksStream);
@@ -227,13 +258,27 @@ namespace AssetStudio
             }
         }
 
-        private void ReadBlocksInfoAndDirectory(EndianBinaryReader reader)
+        private void ReadBlocksInfoAndDirectory(EndianBinaryReader reader, int[] unityVer)
         {
             byte[] blocksInfoBytes;
+
             if (m_Header.version >= 7)
             {
                 reader.AlignStream(16);
             }
+            else if (unityVer[0] >= 2019 && unityVer[1] >= 4)
+            {
+                //check if we need to align the reader
+                //- align to 16 bytes and check if all are 0
+                //- if not, reset the reader to the previous position
+                var preAlign = reader.Position;
+                var alignData = reader.ReadBytes((16 - (int)(preAlign % 16)) % 16);
+                if (alignData.Any(x => x != 0))
+                {
+                    reader.Position = preAlign;
+                }
+            }
+
             if ((m_Header.flags & ArchiveFlags.BlocksInfoAtTheEnd) != 0)
             {
                 var position = reader.Position;

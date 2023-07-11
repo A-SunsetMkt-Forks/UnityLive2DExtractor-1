@@ -12,6 +12,7 @@ namespace AssetStudio
     {
         public string SpecifyUnityVersion;
         public List<SerializedFile> assetsFileList = new List<SerializedFile>();
+        private List<ClassIDType> filteredAssetTypesList = new List<ClassIDType>();
 
         internal Dictionary<string, int> assetsFileIndexCache = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         internal Dictionary<string, BinaryReader> resourceFileReaders = new Dictionary<string, BinaryReader>(StringComparer.OrdinalIgnoreCase);
@@ -21,19 +22,84 @@ namespace AssetStudio
         private HashSet<string> noexistFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private HashSet<string> assetsFileListHash = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        public void LoadFiles(params string[] files)
+        public void SetAssetFilter(ClassIDType classIDType)
         {
-            var path = Path.GetDirectoryName(Path.GetFullPath(files[0]));
-            MergeSplitAssets(path);
-            var toReadFile = ProcessingSplitFiles(files.ToList());
-            Load(toReadFile);
+            if (filteredAssetTypesList.Count == 0)
+            {
+                filteredAssetTypesList.AddRange(new List<ClassIDType>
+                {
+                    ClassIDType.AssetBundle,
+                    ClassIDType.ResourceManager,
+                });
+            }
+
+            if (classIDType == ClassIDType.MonoBehaviour)
+            {
+                filteredAssetTypesList.AddRange(new List<ClassIDType>
+                {
+                    ClassIDType.MonoScript,
+                    ClassIDType.MonoBehaviour
+                });
+            }
+            else
+            {
+                filteredAssetTypesList.Add(classIDType);
+            }
         }
 
-        public void LoadFolder(string path)
+        public void SetAssetFilter(List<ClassIDType> classIDTypeList)
         {
-            MergeSplitAssets(path, true);
-            var files = Directory.GetFiles(path, "*.*", SearchOption.AllDirectories).ToList();
-            var toReadFile = ProcessingSplitFiles(files);
+            foreach (ClassIDType classIDType in classIDTypeList)
+                SetAssetFilter(classIDType);
+        }
+
+        public void LoadFilesAndFolders(params string[] path)
+        {
+            List<string> pathList = new List<string>();
+            pathList.AddRange(path);
+            LoadFilesAndFolders(out _, pathList);
+        }
+
+        public void LoadFilesAndFolders(out string parentPath, params string[] path)
+        {
+            List<string> pathList = new List<string>();
+            pathList.AddRange(path);
+            LoadFilesAndFolders(out parentPath, pathList);
+        }
+
+        public void LoadFilesAndFolders(out string parentPath, List<string> pathList)
+        {
+            List<string> fileList = new List<string>();
+            bool filesInPath = false;
+            parentPath = "";
+            foreach (var path in pathList)
+            {
+                var fullPath = Path.GetFullPath(path);
+                if (Directory.Exists(fullPath))
+                {
+                    var parent = Directory.GetParent(fullPath).FullName;
+                    if (!filesInPath && (parentPath == "" || parentPath.Length > parent.Length))
+                    {
+                        parentPath = parent;
+                    }
+                    MergeSplitAssets(fullPath, true);
+                    fileList.AddRange(Directory.GetFiles(fullPath, "*.*", SearchOption.AllDirectories));
+                }
+                else
+                {
+                    parentPath = Path.GetDirectoryName(fullPath);
+                    fileList.Add(fullPath);
+                    filesInPath = true;
+                }
+            }
+            if (filesInPath)
+            {
+                MergeSplitAssets(parentPath);
+            }
+            var toReadFile = ProcessingSplitFiles(fileList);
+            fileList.Clear();
+            pathList.Clear();
+
             Load(toReadFile);
         }
 
@@ -135,9 +201,14 @@ namespace AssetStudio
                         }
                     }
                 }
+                catch (NotSupportedException e)
+                {
+                    Logger.Error(e.Message);
+                    reader.Dispose();
+                }
                 catch (Exception e)
                 {
-                    Logger.Error($"Error while reading assets file {reader.FullPath}", e);
+                    Logger.Warning($"Error while reading assets file {reader.FullPath}\r\n{e}");
                     reader.Dispose();
                 }
             }
@@ -164,9 +235,14 @@ namespace AssetStudio
                     assetsFileList.Add(assetsFile);
                     assetsFileListHash.Add(assetsFile.fileName);
                 }
+                catch (NotSupportedException e)
+                {
+                    Logger.Error(e.Message);
+                    resourceFileReaders.Add(reader.FileName, reader);
+                }
                 catch (Exception e)
                 {
-                    Logger.Error($"Error while reading assets file {reader.FullPath} from {Path.GetFileName(originalPath)}", e);
+                    Logger.Warning($"Error while reading assets file {reader.FullPath} from {Path.GetFileName(originalPath)}\r\n{e}");
                     resourceFileReaders.Add(reader.FileName, reader);
                 }
             }
@@ -179,7 +255,7 @@ namespace AssetStudio
             Logger.Info("Loading " + reader.FullPath);
             try
             {
-                var bundleFile = new BundleFile(reader);
+                var bundleFile = new BundleFile(reader, SpecifyUnityVersion);
                 foreach (var file in bundleFile.fileList)
                 {
                     var dummyPath = Path.Combine(Path.GetDirectoryName(reader.FullPath), file.fileName);
@@ -188,11 +264,15 @@ namespace AssetStudio
                     {
                         LoadAssetsFromMemory(subReader, originalPath ?? reader.FullPath, bundleFile.m_Header.unityRevision);
                     }
-                    else
+                    else if (!resourceFileReaders.ContainsKey(file.fileName))
                     {
-                        resourceFileReaders[file.fileName] = subReader; //TODO
+                        resourceFileReaders.Add(file.fileName, subReader);
                     }
                 }
+            }
+            catch (NotSupportedException e)
+            {
+                Logger.Error(e.Message);
             }
             catch (Exception e)
             {
@@ -201,7 +281,7 @@ namespace AssetStudio
                 {
                     str += $" from {Path.GetFileName(originalPath)}";
                 }
-                Logger.Error(str, e);
+                Logger.Warning($"{str}\r\n{e}");
             }
             finally
             {
@@ -248,7 +328,7 @@ namespace AssetStudio
 
         private void LoadZipFile(FileReader reader)
         {
-            Logger.Info("Loading " + reader.FileName);
+            Logger.Info("Reading " + reader.FileName);
             try
             {
                 using (ZipArchive archive = new ZipArchive(reader.BaseStream, ZipArchiveMode.Read))
@@ -298,11 +378,14 @@ namespace AssetStudio
                         }
                         catch (Exception e)
                         {
-                            Logger.Error($"Error while reading zip split file {basePath}", e);
+                            Logger.Warning($"Error while reading zip split file {basePath}\r\n{e}");
                         }
                     }
 
                     // load all entries
+                    var progressCount = archive.Entries.Count;
+                    int k = 0;
+                    Progress.Reset();
                     foreach (ZipArchiveEntry entry in archive.Entries)
                     {
                         try
@@ -328,10 +411,11 @@ namespace AssetStudio
                                     resourceFileReaders.Add(entry.Name, entryReader);
                                 }
                             }
+                            Progress.Report(++k, progressCount);
                         }
                         catch (Exception e)
                         {
-                            Logger.Error($"Error while reading zip entry {entry.FullName}", e);
+                            Logger.Warning($"Error while reading zip entry {entry.FullName}\r\n{e}");
                         }
                     }
                 }
@@ -350,7 +434,7 @@ namespace AssetStudio
         {
             if (assetsFile.IsVersionStripped && string.IsNullOrEmpty(SpecifyUnityVersion))
             {
-                throw new Exception("The Unity version has been stripped, please set the version in the options");
+                throw new NotSupportedException("The Unity version has been stripped, please set the version in the options");
             }
             if (!string.IsNullOrEmpty(SpecifyUnityVersion))
             {
@@ -388,9 +472,13 @@ namespace AssetStudio
                 foreach (var objectInfo in assetsFile.m_Objects)
                 {
                     var objectReader = new ObjectReader(assetsFile.reader, assetsFile, objectInfo);
+                    if (filteredAssetTypesList.Count > 0 && !filteredAssetTypesList.Contains(objectReader.type))
+                    {
+                        continue;
+                    }
                     try
                     {
-                        Object obj;
+                        Object obj = null;
                         switch (objectReader.type)
                         {
                             case ClassIDType.Animation:
@@ -451,7 +539,8 @@ namespace AssetStudio
                                 obj = new RectTransform(objectReader);
                                 break;
                             case ClassIDType.Shader:
-                                obj = new Shader(objectReader);
+                                if (objectReader.version[0] < 2021)
+                                    obj = new Shader(objectReader);
                                 break;
                             case ClassIDType.SkinnedMeshRenderer:
                                 obj = new SkinnedMeshRenderer(objectReader);
@@ -481,7 +570,8 @@ namespace AssetStudio
                                 obj = new Object(objectReader);
                                 break;
                         }
-                        assetsFile.AddObject(obj);
+                        if (obj != null)
+                            assetsFile.AddObject(obj);
                     }
                     catch (Exception e)
                     {
@@ -492,7 +582,7 @@ namespace AssetStudio
                             .AppendLine($"Type {objectReader.type}")
                             .AppendLine($"PathID {objectInfo.m_PathID}")
                             .Append(e);
-                        Logger.Error(sb.ToString());
+                        Logger.Warning(sb.ToString());
                     }
 
                     Progress.Report(++i, progressCount);
@@ -502,7 +592,7 @@ namespace AssetStudio
 
         private void ProcessAssets()
         {
-            Logger.Info("Process Assets...");
+            Logger.Info("Process assets...");
 
             foreach (var assetsFile in assetsFileList)
             {

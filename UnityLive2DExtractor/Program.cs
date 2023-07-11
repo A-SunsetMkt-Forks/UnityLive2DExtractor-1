@@ -24,7 +24,14 @@ namespace UnityLive2DExtractor
             }
             Console.WriteLine($"Loading...");
             var assetsManager = new AssetsManager();
-            assetsManager.LoadFolder(args[0]);
+            assetsManager.SetAssetFilter(new List<ClassIDType>() {
+                ClassIDType.AnimationClip,
+                ClassIDType.GameObject,
+                ClassIDType.MonoBehaviour,
+                ClassIDType.Texture2D,
+                ClassIDType.Transform,
+            });
+            assetsManager.LoadFilesAndFolders(args[0]);
             if (assetsManager.assetsFileList.Count == 0)
             {
                 Console.WriteLine("No Unity file can be loaded.\n");

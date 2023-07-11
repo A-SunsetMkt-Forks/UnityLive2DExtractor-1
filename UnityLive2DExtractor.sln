@@ -6,8 +6,8 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnityLive2DExtractor", "UnityLive2DExtractor\UnityLive2DExtractor.csproj", "{7D22D721-C1B4-424A-A2B9-8978FB1E53A3}"
 	ProjectSection(ProjectDependencies) = postProject
 		{205DA51C-B1D6-4C4B-B05A-D6B69CAE2818} = {205DA51C-B1D6-4C4B-B05A-D6B69CAE2818}
-		{9315DBE9-8106-4C12-A686-EA0EE4134528} = {9315DBE9-8106-4C12-A686-EA0EE4134528}
 		{7BD8FFFB-D411-474D-8D20-A7948877D50B} = {7BD8FFFB-D411-474D-8D20-A7948877D50B}
+		{9315DBE9-8106-4C12-A686-EA0EE4134528} = {9315DBE9-8106-4C12-A686-EA0EE4134528}
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AssetStudio", "AssetStudio\AssetStudio.csproj", "{7BD8FFFB-D411-474D-8D20-A7948877D50B}"
@@ -17,6 +17,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Texture2DDecoderNative", "Texture2DDecoderNative\Texture2DDecoderNative.vcxproj", "{29356642-C46E-4144-83D8-22DC09D0D7FD}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Texture2DDecoderWrapper", "Texture2DDecoderWrapper\Texture2DDecoderWrapper.csproj", "{205DA51C-B1D6-4C4B-B05A-D6B69CAE2818}"
+	ProjectSection(ProjectDependencies) = postProject
+		{29356642-C46E-4144-83D8-22DC09D0D7FD} = {29356642-C46E-4144-83D8-22DC09D0D7FD}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

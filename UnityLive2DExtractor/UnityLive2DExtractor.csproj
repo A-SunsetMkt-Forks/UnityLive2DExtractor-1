@@ -2,8 +2,8 @@
     <PropertyGroup>
         <TargetFrameworks>net472;net6.0;net7.0</TargetFrameworks>
         <OutputType>Exe</OutputType>
-        <Version>1.0.7.2</Version>
-        <AssemblyTitle>UnityLive2DExtractor mod by VaDiM</AssemblyTitle>
+        <Version>1.0.7.3</Version>
+        <AssemblyTitle>UnityLive2DExtractorMod by aelurum</AssemblyTitle>
         <Copyright>Copyright © Perfare 2019-2022</Copyright>
         <PlatformTarget>AnyCPU</PlatformTarget>
         <DebugType>embedded</DebugType>
@@ -12,17 +12,20 @@
         <PackageReference Include="Kyaru.Texture2DDecoder.Linux" Version="0.1.0" />
         <PackageReference Include="Kyaru.Texture2DDecoder.macOS" Version="0.1.0" />
         <PackageReference Include="Kyaru.Texture2DDecoder.Windows" Version="0.1.0" />
-        <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
-        <PackageReference Include="SixLabors.ImageSharp" Version="2.1.3" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     </ItemGroup>
     <ItemGroup Condition="'$(TargetFramework)' != 'net472'">
+        <PackageReference Include="SixLabors.ImageSharp" Version="3.0.1" />
         <PackageReference Include="Kyaru.Texture2DDecoder" Version="0.17.0" />
     </ItemGroup>
+    <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
+        <PackageReference Include="SixLabors.ImageSharp" Version="2.1.4" />
+    </ItemGroup>
     <ItemGroup>
-        <ProjectReference Include="..\AssetStudio.PInvoke\AssetStudio.PInvoke.csproj" />
         <ProjectReference Include="..\AssetStudio\AssetStudio.csproj" />
     </ItemGroup>
     <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
+        <ProjectReference Include="..\AssetStudio.PInvoke\AssetStudio.PInvoke.csproj" />
         <ProjectReference Include="..\Texture2DDecoderWrapper\Texture2DDecoderWrapper.csproj" />
     </ItemGroup>
 
@@ -33,8 +36,9 @@
         <Copy SourceFiles="$(SolutionDir)Texture2DDecoderNative\bin\$(Configuration)\Win32\Texture2DDecoderNative.dll" DestinationFolder="$(TargetDir)runtimes\win-x86\native" ContinueOnError="false" />
         <Copy SourceFiles="$(SolutionDir)Texture2DDecoderNative\bin\$(Configuration)\x64\Texture2DDecoderNative.dll" DestinationFolder="$(TargetDir)runtimes\win-x64\native" ContinueOnError="false" />
     </Target>
-    
-    <!-- Publishing an app as framework-dependent produces a cross-platform binary as a dll file, and a platform-specific executable that targets your current platform. The dll is cross-platform while the executable isn't. -->
+
+    <!-- Publishing an app as framework-dependent produces a cross-platform binary as a dll file, and a platform-specific executable that targets your current platform.
+    The dll is cross-platform while the executable isn't -->
     <Target Name="PublishExtraFilesPortable" AfterTargets="Publish" Condition=" '$(RuntimeIdentifier)' == '' ">
         <Message Text="Publishing extra files for Portable build ($(TargetFramework))... " Importance="high" />
         <Copy SourceFiles="$(TargetDir)runtimes\win-x86\native\Texture2DDecoderNative.dll" DestinationFolder="$(PublishDir)runtimes\win-x86\native" ContinueOnError="false" />

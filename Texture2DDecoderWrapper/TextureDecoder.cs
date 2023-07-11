@@ -9,13 +9,12 @@ namespace Texture2DDecoder
 {
     public static unsafe partial class TextureDecoder
     {
-
+#if NETFRAMEWORK
         static TextureDecoder()
         {
-#if NETFRAMEWORK
             DllLoader.PreloadDll(T2DDll.DllName);
-#endif
         }
+#endif
 
         public static bool DecodeDXT1(ReadOnlySpan<byte> data, int width, int height, Span<byte> image)
         {
