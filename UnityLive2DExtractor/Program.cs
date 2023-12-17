@@ -24,7 +24,7 @@ namespace UnityLive2DExtractor
             }
             Console.WriteLine($"Loading...");
             var assetsManager = new AssetsManager();
-            assetsManager.SetAssetFilter(new List<ClassIDType>() {
+            assetsManager.SetAssetFilter(new ClassIDType[] {
                 ClassIDType.AnimationClip,
                 ClassIDType.GameObject,
                 ClassIDType.MonoBehaviour,

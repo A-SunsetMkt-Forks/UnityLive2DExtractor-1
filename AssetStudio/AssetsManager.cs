@@ -12,7 +12,7 @@ namespace AssetStudio
     {
         public string SpecifyUnityVersion;
         public List<SerializedFile> assetsFileList = new List<SerializedFile>();
-        private List<ClassIDType> filteredAssetTypesList = new List<ClassIDType>();
+        private HashSet<ClassIDType> filteredAssetTypesList = new HashSet<ClassIDType>();
 
         internal Dictionary<string, int> assetsFileIndexCache = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         internal Dictionary<string, BinaryReader> resourceFileReaders = new Dictionary<string, BinaryReader>(StringComparer.OrdinalIgnoreCase);
@@ -22,35 +22,33 @@ namespace AssetStudio
         private HashSet<string> noexistFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private HashSet<string> assetsFileListHash = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        public void SetAssetFilter(ClassIDType classIDType)
+        public void SetAssetFilter(params ClassIDType[] classIDTypes)
         {
             if (filteredAssetTypesList.Count == 0)
             {
-                filteredAssetTypesList.AddRange(new List<ClassIDType>
+                filteredAssetTypesList.UnionWith(new HashSet<ClassIDType>
                 {
                     ClassIDType.AssetBundle,
                     ClassIDType.ResourceManager,
                 });
             }
 
-            if (classIDType == ClassIDType.MonoBehaviour)
+            if (classIDTypes.Contains(ClassIDType.MonoBehaviour))
             {
-                filteredAssetTypesList.AddRange(new List<ClassIDType>
-                {
-                    ClassIDType.MonoScript,
-                    ClassIDType.MonoBehaviour
-                });
+                filteredAssetTypesList.Add(ClassIDType.MonoScript);
             }
-            else
+            if (classIDTypes.Contains(ClassIDType.Sprite))
             {
-                filteredAssetTypesList.Add(classIDType);
+                filteredAssetTypesList.Add(ClassIDType.Texture2D);
+                filteredAssetTypesList.Add(ClassIDType.SpriteAtlas);
             }
+
+            filteredAssetTypesList.UnionWith(classIDTypes);
         }
 
         public void SetAssetFilter(List<ClassIDType> classIDTypeList)
         {
-            foreach (ClassIDType classIDType in classIDTypeList)
-                SetAssetFilter(classIDType);
+            SetAssetFilter(classIDTypeList.ToArray());
         }
 
         public void LoadFilesAndFolders(params string[] path)
@@ -85,7 +83,7 @@ namespace AssetStudio
                     MergeSplitAssets(fullPath, true);
                     fileList.AddRange(Directory.GetFiles(fullPath, "*.*", SearchOption.AllDirectories));
                 }
-                else
+                else if (File.Exists(fullPath))
                 {
                     parentPath = Path.GetDirectoryName(fullPath);
                     fileList.Add(fullPath);
@@ -136,7 +134,7 @@ namespace AssetStudio
 
         private void LoadFile(FileReader reader)
         {
-            switch (reader.FileType)
+            switch (reader?.FileType)
             {
                 case FileType.AssetsFile:
                     LoadAssetsFile(reader);
@@ -535,6 +533,9 @@ namespace AssetStudio
                             case ClassIDType.PlayerSettings:
                                 obj = new PlayerSettings(objectReader);
                                 break;
+                            case ClassIDType.PreloadData:
+                                obj = new PreloadData(objectReader);
+                                break;
                             case ClassIDType.RectTransform:
                                 obj = new RectTransform(objectReader);
                                 break;
@@ -638,13 +639,16 @@ namespace AssetStudio
                                 {
                                     m_Sprite.m_SpriteAtlas.Set(m_SpriteAtlas);
                                 }
-                                else
+                                else if (m_Sprite.m_SpriteAtlas.TryGet(out var m_SpriteAtlaOld))
                                 {
-                                    m_Sprite.m_SpriteAtlas.TryGet(out var m_SpriteAtlaOld);
                                     if (m_SpriteAtlaOld.m_IsVariant)
                                     {
                                         m_Sprite.m_SpriteAtlas.Set(m_SpriteAtlas);
                                     }
+                                }
+                                else
+                                {
+                                    Logger.Warning($"\"{m_Sprite.m_Name}\": Sprite loading error. SpriteAtlas with PathID: \"{m_Sprite.m_SpriteAtlas.m_PathID}\" was not found.");
                                 }
                             }
                         }
