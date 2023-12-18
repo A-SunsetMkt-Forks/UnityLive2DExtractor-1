@@ -5,6 +5,7 @@ Used to extract Live2D Cubism 3 files from Unity AssetBundle
 
 ## Additional features
 UnityLive2DExtractor has been integrated into [AssetStudioMod](https://github.com/aelurum/AssetStudio) since version 0.17.1 (including the CLI version)
+
 Using the Live2D export option in AssetStudioMod makes possible such features as:
 - specifying a Unity version
 - specifying an assembly folder
