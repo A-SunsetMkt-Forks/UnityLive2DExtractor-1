@@ -151,7 +151,7 @@ namespace UnityLive2DExtractor
                     File.WriteAllText($"{destMotionPath}{animName}.motion3.json", JsonConvert.SerializeObject(motionJson, Formatting.Indented, new MyJsonConverter()));
                 }
             }
-            else if (gameObjects.Count > 0)  //motion from AnimationClip
+            if (motions.Count == 0 && gameObjects.Count > 0)  //motion from AnimationClip
             {
                 var rootTransform = gameObjects[0].m_Transform;
                 while (rootTransform.m_Father.TryGet(out var m_Father))
