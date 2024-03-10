@@ -168,7 +168,7 @@ namespace UnityLive2DExtractor
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"{"[Error]".Color(ColorConsole.BrightRed)} Live2D model export error: \"{srcContainer}\"", ex);
+                    Console.WriteLine($"{"[Error]".Color(ColorConsole.BrightRed)} Live2D model export error: \"{srcContainer}\"\n{ex}");
                 }
             }
             var status = modelCounter > 0 ?
