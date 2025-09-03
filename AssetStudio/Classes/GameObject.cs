@@ -1,13 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace AssetStudio
 {
     public sealed class GameObject : EditorExtension
     {
-        public PPtr<Component>[] m_Components;
+        public List<PPtr<Component>> m_Components;
         public string m_Name;
 
         public Transform m_Transform;
@@ -16,21 +14,28 @@ namespace AssetStudio
         public SkinnedMeshRenderer m_SkinnedMeshRenderer;
         public Animator m_Animator;
         public Animation m_Animation;
+        [JsonIgnore]
+        public CubismModel CubismModel;
 
         public GameObject(ObjectReader reader) : base(reader)
         {
-            int m_Component_size = reader.ReadInt32();
-            m_Components = new PPtr<Component>[m_Component_size];
-            for (int i = 0; i < m_Component_size; i++)
+            var m_ComponentSize = reader.ReadInt32();
+            m_Components = new List<PPtr<Component>>();
+            for (var i = 0; i < m_ComponentSize; i++)
             {
-                if ((version[0] == 5 && version[1] < 5) || version[0] < 5) //5.5 down
+                if (version < (5, 5)) //5.5 down
                 {
-                    int first = reader.ReadInt32();
+                    var first = reader.ReadInt32();
                 }
-                m_Components[i] = new PPtr<Component>(reader);
+                m_Components.Add(new PPtr<Component>(reader));
             }
 
             var m_Layer = reader.ReadInt32();
+            if (version.IsTuanjie && (version > (2022, 3, 2) || (version == (2022, 3, 2) && version.Build >= 11))) //2022.3.2t11(1.1.3) and up
+            {
+                var m_HasEditorInfo = reader.ReadBoolean();
+                reader.AlignStream();
+            }
             m_Name = reader.ReadAlignedString();
         }
     }

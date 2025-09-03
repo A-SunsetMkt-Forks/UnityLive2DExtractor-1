@@ -38,7 +38,7 @@ namespace UnityLive2DExtractor
                 ClassIDType.Transform
             );
             assetsManager.LoadFilesAndFolders(args[0]);
-            if (assetsManager.assetsFileList.Count == 0)
+            if (assetsManager.AssetsFileList.Count == 0)
             {
                 Console.WriteLine("No Unity file can be loaded.\n");
                 return;
@@ -48,9 +48,9 @@ namespace UnityLive2DExtractor
 
             var containers = new Dictionary<AssetStudio.Object, string>();
             var cubismMocs = new List<MonoBehaviour>();
-            foreach (var assetsFile in assetsManager.assetsFileList)
+            foreach (var assetsFile in assetsManager.AssetsFileList)
             {
-                var preloadTable = Array.Empty<PPtr<AssetStudio.Object>>();
+                var preloadTable = new List<PPtr<AssetStudio.Object>>();
                 foreach (var asset in assetsFile.Objects)
                 {
                     switch (asset)
@@ -68,7 +68,7 @@ namespace UnityLive2DExtractor
                             foreach (var m_Container in m_AssetBundle.m_Container)
                             {
                                 var preloadIndex = m_Container.Value.preloadIndex;
-                                var preloadSize = isStreamedSceneAssetBundle ? preloadTable.Length : m_Container.Value.preloadSize;
+                                var preloadSize = isStreamedSceneAssetBundle ? preloadTable.Count : m_Container.Value.preloadSize;
                                 var preloadEnd = preloadIndex + preloadSize;
                                 for (var k = preloadIndex; k < preloadEnd; k++)
                                 {

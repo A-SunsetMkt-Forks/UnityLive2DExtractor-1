@@ -1,18 +1,47 @@
 ﻿using System.Collections.Specialized;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 
 namespace AssetStudio
 {
     public class Object
     {
+        [JsonIgnore]
         public SerializedFile assetsFile;
+        [JsonIgnore]
         public ObjectReader reader;
         public long m_PathID;
-        public int[] version;
-        protected BuildType buildType;
+        [JsonIgnore]
+        public UnityVersion version;
+        [JsonIgnore]
         public BuildTarget platform;
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public ClassIDType type;
+        [JsonIgnore]
         public SerializedType serializedType;
+        public int classID;
         public uint byteSize;
+        [JsonIgnore]
+        public string Name;
+        private static readonly JsonSerializerOptions jsonOptions;
+
+        static Object()
+        {
+            jsonOptions = new JsonSerializerOptions
+            {
+                Converters = { new JsonConverterHelper.FloatConverter() },
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals,
+                ReferenceHandler = ReferenceHandler.IgnoreCycles,
+                PropertyNameCaseInsensitive = true,
+                IncludeFields = true,
+                WriteIndented = true,
+            };
+        }
+
+        public Object() { }
 
         public Object(ObjectReader reader)
         {
@@ -22,9 +51,9 @@ namespace AssetStudio
             type = reader.type;
             m_PathID = reader.m_PathID;
             version = reader.version;
-            buildType = reader.buildType;
             platform = reader.platform;
             serializedType = reader.serializedType;
+            classID = reader.classID;
             byteSize = reader.byteSize;
 
             if (platform == BuildTarget.NoTarget)
@@ -33,39 +62,67 @@ namespace AssetStudio
             }
         }
 
-        public string Dump()
+        public string DumpObject()
         {
-            if (serializedType?.m_Type != null)
+            string str = null;
+            try
             {
-                return TypeTreeHelper.ReadTypeString(serializedType.m_Type, reader);
+                if (this is Mesh m_Mesh)
+                {
+                    m_Mesh.ProcessData();
+                }
+
+                str = JsonSerializer.Deserialize<JsonObject>(JsonSerializer.SerializeToUtf8Bytes(this, GetType(), jsonOptions))
+                    .ToJsonString(jsonOptions).Replace("  ", "    ");
             }
-            return null;
+            catch
+            {
+                //ignore
+            }
+
+            return str;
         }
 
-        public string Dump(TypeTree m_Type)
+        public string Dump(TypeTree m_Type = null)
         {
-            if (m_Type != null)
-            {
-                return TypeTreeHelper.ReadTypeString(m_Type, reader);
-            }
-            return null;
+            m_Type = m_Type ?? serializedType?.m_Type;
+            if (m_Type == null)
+                return null;
+
+            return TypeTreeHelper.ReadTypeString(m_Type, reader);
         }
 
-        public OrderedDictionary ToType()
+        public OrderedDictionary ToType(TypeTree m_Type = null)
         {
-            if (serializedType?.m_Type != null)
-            {
-                return TypeTreeHelper.ReadType(serializedType.m_Type, reader);
-            }
-            return null;
+            m_Type = m_Type ?? serializedType?.m_Type;
+            if (m_Type == null)
+                return null;
+
+            return TypeTreeHelper.ReadType(m_Type, reader);
         }
 
-        public OrderedDictionary ToType(TypeTree m_Type)
+        public JsonDocument ToJsonDoc(TypeTree m_Type = null)
         {
-            if (m_Type != null)
+            var typeDict = ToType(m_Type);
+            try
             {
-                return TypeTreeHelper.ReadType(m_Type, reader);
+                if (typeDict != null)
+                {
+                    return JsonSerializer.SerializeToDocument(typeDict, jsonOptions);
+                }
+
+                if (this is Mesh m_Mesh)
+                {
+                    m_Mesh.ProcessData();
+                }
+
+                return JsonSerializer.SerializeToDocument(this, GetType(), jsonOptions);
             }
+            catch
+            {
+                //ignore
+            }
+
             return null;
         }
 

@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text.RegularExpressions;
 
 namespace AssetStudio
 {
@@ -13,15 +11,14 @@ namespace AssetStudio
         public string fullName;
         public string originalPath;
         public string fileName;
-        public int[] version = { 0, 0, 0, 0 };
-        public BuildType buildType;
+        public UnityVersion version = new UnityVersion();
         public List<Object> Objects;
         public Dictionary<long, Object> ObjectsDic;
 
         public SerializedFileHeader header;
         private byte m_FileEndianess;
-        public string unityVersion = "2.5.0f5";
         public BuildTarget m_TargetPlatform = BuildTarget.UnknownPlatform;
+        public string targetPlatformString;
         private bool m_EnableTypeTree = true;
         public List<SerializedType> m_Types;
         public int bigIDEnabled = 0;
@@ -72,16 +69,39 @@ namespace AssetStudio
             }
             if (header.m_Version >= SerializedFileFormatVersion.Unknown_7)
             {
-                unityVersion = reader.ReadStringToNull();
-                SetVersion(unityVersion);
+                var versionPos = reader.Position;
+
+                var verStr = reader.ReadStringToNull();
+                if (!UnityVersion.TryParse(verStr, out version))
+                {
+                    if (assetsManager.Options.CustomUnityVersion == null)
+                    {
+                        Logger.Warning($"Failed to parse Unity version: \"{verStr}\"");
+                        version = new UnityVersion();
+                        return;
+                    }
+                    version = assetsManager.Options.CustomUnityVersion;
+                    reader.Position = versionPos;
+                    reader.ReadBytes(version.ToString().Length + 1);
+                }
+            }
+            else
+            {
+                version = new UnityVersion(2, 5, 0);
             }
             if (header.m_Version >= SerializedFileFormatVersion.Unknown_8)
             {
-                m_TargetPlatform = (BuildTarget)reader.ReadInt32();
+                var target = reader.ReadInt32();
+                
+                m_TargetPlatform = (BuildTarget)target;
                 if (!Enum.IsDefined(typeof(BuildTarget), m_TargetPlatform))
                 {
                     m_TargetPlatform = BuildTarget.UnknownPlatform;
                 }
+
+                targetPlatformString = version.IsTuanjie && Enum.IsDefined(typeof(TuanjieBuildTarget), target)
+                    ? ((TuanjieBuildTarget)target).ToString()
+                    : m_TargetPlatform.ToString();
             }
             if (header.m_Version >= SerializedFileFormatVersion.HasTypeTreeHashes)
             {
@@ -90,8 +110,8 @@ namespace AssetStudio
 
             // Read Types
             int typeCount = reader.ReadInt32();
-            m_Types = new List<SerializedType>(typeCount);
-            for (int i = 0; i < typeCount; i++)
+            m_Types = new List<SerializedType>();
+            for (var i = 0; i < typeCount; i++)
             {
                 m_Types.Add(ReadSerializedType(false));
             }
@@ -103,10 +123,10 @@ namespace AssetStudio
 
             // Read Objects
             int objectCount = reader.ReadInt32();
-            m_Objects = new List<ObjectInfo>(objectCount);
-            Objects = new List<Object>(objectCount);
-            ObjectsDic = new Dictionary<long, Object>(objectCount);
-            for (int i = 0; i < objectCount; i++)
+            m_Objects = new List<ObjectInfo>();
+            Objects = new List<Object>();
+            ObjectsDic = new Dictionary<long, Object>();
+            for (var i = 0; i < objectCount; i++)
             {
                 var objectInfo = new ObjectInfo();
                 if (bigIDEnabled != 0)
@@ -162,8 +182,8 @@ namespace AssetStudio
             if (header.m_Version >= SerializedFileFormatVersion.HasScriptTypeIndex)
             {
                 int scriptCount = reader.ReadInt32();
-                m_ScriptTypes = new List<LocalSerializedObjectIdentifier>(scriptCount);
-                for (int i = 0; i < scriptCount; i++)
+                m_ScriptTypes = new List<LocalSerializedObjectIdentifier>();
+                for (var i = 0; i < scriptCount; i++)
                 {
                     var m_ScriptType = new LocalSerializedObjectIdentifier();
                     m_ScriptType.localSerializedFileIndex = reader.ReadInt32();
@@ -181,8 +201,8 @@ namespace AssetStudio
             }
 
             int externalsCount = reader.ReadInt32();
-            m_Externals = new List<FileIdentifier>(externalsCount);
-            for (int i = 0; i < externalsCount; i++)
+            m_Externals = new List<FileIdentifier>();
+            for (var i = 0; i < externalsCount; i++)
             {
                 var m_External = new FileIdentifier();
                 if (header.m_Version >= SerializedFileFormatVersion.Unknown_6)
@@ -202,8 +222,8 @@ namespace AssetStudio
             if (header.m_Version >= SerializedFileFormatVersion.SupportsRefObject)
             {
                 int refTypesCount = reader.ReadInt32();
-                m_RefTypes = new List<SerializedType>(refTypesCount);
-                for (int i = 0; i < refTypesCount; i++)
+                m_RefTypes = new List<SerializedType>();
+                for (var i = 0; i < refTypesCount; i++)
                 {
                     m_RefTypes.Add(ReadSerializedType(true));
                 }
@@ -215,22 +235,6 @@ namespace AssetStudio
             }
 
             //reader.AlignStream(16);
-        }
-
-        public void SetVersion(string stringVersion)
-        {
-            if (stringVersion != strippedVersion)
-            {
-                unityVersion = stringVersion;
-                var buildSplit = Regex.Replace(stringVersion, @"\d", "").Split(new[] { "." }, StringSplitOptions.RemoveEmptyEntries);
-                if (buildSplit.Length == 0)
-                    throw new NotSupportedException("Specified Unity version is not in a correct format.\n" +
-                        "Specify full Unity version, including letters at the end.\n" +
-                        "Example: 2017.4.39f1");
-                buildType = new BuildType(buildSplit[0]);
-                var versionSplit = Regex.Replace(stringVersion, @"\D", ".").Split(new[] { "." }, StringSplitOptions.RemoveEmptyEntries);
-                version = versionSplit.Select(int.Parse).ToArray();
-            }
         }
 
         private SerializedType ReadSerializedType(bool isRefType)
@@ -316,7 +320,7 @@ namespace AssetStudio
             }
 
             int childrenCount = reader.ReadInt32();
-            for (int i = 0; i < childrenCount; i++)
+            for (var i = 0; i < childrenCount; i++)
             {
                 ReadTypeTree(m_Type, level + 1);
             }
@@ -326,7 +330,7 @@ namespace AssetStudio
         {
             int numberOfNodes = reader.ReadInt32();
             int stringBufferSize = reader.ReadInt32();
-            for (int i = 0; i < numberOfNodes; i++)
+            for (var i = 0; i < numberOfNodes; i++)
             {
                 var typeTreeNode = new TypeTreeNode();
                 m_Type.m_Nodes.Add(typeTreeNode);
@@ -347,7 +351,7 @@ namespace AssetStudio
 
             using (var stringBufferReader = new BinaryReader(new MemoryStream(m_Type.m_StringBuffer)))
             {
-                for (int i = 0; i < numberOfNodes; i++)
+                for (var i = 0; i < numberOfNodes; i++)
                 {
                     var m_Node = m_Type.m_Nodes[i];
                     m_Node.m_Type = ReadString(stringBufferReader, m_Node.m_TypeStrOffset);
@@ -377,9 +381,5 @@ namespace AssetStudio
             Objects.Add(obj);
             ObjectsDic.Add(obj.m_PathID, obj);
         }
-
-        public bool IsVersionStripped => unityVersion == strippedVersion;
-
-        private const string strippedVersion = "0.0.0";
     }
 }

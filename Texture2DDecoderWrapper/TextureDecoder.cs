@@ -261,6 +261,5 @@ namespace Texture2DDecoder
 
             return result;
         }
-
     }
 }
