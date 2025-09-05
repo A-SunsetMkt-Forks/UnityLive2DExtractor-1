@@ -3,7 +3,7 @@ using SixLabors.ImageSharp.Formats.Bmp;
 using SixLabors.ImageSharp.Formats.Tga;
 using System.IO;
 
-namespace AssetStudio
+namespace UnityLive2DExtractor.Utilities
 {
     public static class ImageExtensions
     {

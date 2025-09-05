@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AssetStudio;
+using UnityLive2DExtractor.CubismUnityClasses;
 
 namespace UnityLive2DExtractor
 {
@@ -45,9 +47,9 @@ namespace UnityLive2DExtractor
         }
 
         private static void AddSegments(
-            CubismKeyframeData curve,
-            CubismKeyframeData preCurve,
-            CubismKeyframeData nextCurve,
+            Keyframe<float> curve,
+            Keyframe<float> preCurve,
+            Keyframe<float> nextCurve,
             SerializableCurve cubismCurve,
             bool forceBezier,
             ref int totalPointCount,
@@ -97,7 +99,7 @@ namespace UnityLive2DExtractor
             totalSegmentCount++;
         }
 
-        public CubismMotion3Json(CubismFadeMotion fadeMotion, HashSet<string> paramNames, HashSet<string> partNames, bool forceBezier)
+        public CubismMotion3Json(CubismFadeMotionData fadeMotion, HashSet<string> paramNames, HashSet<string> partNames, bool forceBezier)
         {
             Version = 3;
             Meta = new SerializableMeta
@@ -115,7 +117,7 @@ namespace UnityLive2DExtractor
                 // [Optional] Time of the overall Fade-Out for easing in seconds.
                 FadeOutTime = fadeMotion.FadeOutTime,
                 // The total number of curves.
-                CurveCount = (int)fadeMotion.ParameterCurves.LongCount(x => x.m_Curve.Length > 0),
+                CurveCount = (int)fadeMotion.ParameterCurves.LongCount(x => x.m_Curve.Count > 0),
                 // [Optional] The total number of UserData.
                 UserDataCount = 0
             };
@@ -127,7 +129,7 @@ namespace UnityLive2DExtractor
             var actualCurveCount = 0;
             for (var i = 0; i < fadeMotion.ParameterCurves.Length; i++)
             {
-                if (fadeMotion.ParameterCurves[i].m_Curve.Length == 0)
+                if (fadeMotion.ParameterCurves[i].m_Curve.Count == 0)
                     continue;
 
                 string target;
@@ -151,7 +153,7 @@ namespace UnityLive2DExtractor
                         else
                         {
                             target = paramId.ToLower().Contains("part") ? "PartOpacity" : "Parameter";
-                            AssetStudio.Logger.Warning($"[{fadeMotion.m_Name}] Binding error: Unable to find \"{paramId}\" among the model parts/parameters");
+                            Console.WriteLine($"[{fadeMotion.m_Name}] Binding error: Unable to find \"{paramId}\" among the model parts/parameters");
                         }
                         break;
                 }
@@ -173,12 +175,12 @@ namespace UnityLive2DExtractor
                         fadeMotion.ParameterCurves[i].m_Curve[0].value
                     }
                 };
-                for (var j = 1; j < fadeMotion.ParameterCurves[i].m_Curve.Length; j++)
+                for (var j = 1; j < fadeMotion.ParameterCurves[i].m_Curve.Count; j++)
                 {
                     var curve = fadeMotion.ParameterCurves[i].m_Curve[j];
                     var preCurve = fadeMotion.ParameterCurves[i].m_Curve[j - 1];
                     var next = fadeMotion.ParameterCurves[i].m_Curve.ElementAtOrDefault(j + 1);
-                    var nextCurve = next ?? new CubismKeyframeData();
+                    var nextCurve = next ?? new Keyframe<float>();
                     AddSegments(curve, preCurve, nextCurve, Curves[actualCurveCount], forceBezier, ref totalPointCount, ref totalSegmentCount, ref j);
                 }
                 actualCurveCount++;
@@ -230,10 +232,10 @@ namespace UnityLive2DExtractor
                 };
                 for (var j = 1; j < track.Curve.Count; j++)
                 {
-                    var curve = new CubismKeyframeData(track.Curve[j]);
-                    var preCurve = new CubismKeyframeData(track.Curve[j - 1]);
+                    var curve = CreateKeyFrame(track.Curve[j]);
+                    var preCurve = CreateKeyFrame(track.Curve[j - 1]);
                     var next = track.Curve.ElementAtOrDefault(j + 1);
-                    var nextCurve = next != null ? new CubismKeyframeData(next) : new CubismKeyframeData();
+                    var nextCurve = next != null ? CreateKeyFrame(next) : new Keyframe<float>();
                     AddSegments(curve, preCurve, nextCurve, Curves[i], forceBezier, ref totalPointCount, ref totalSegmentCount, ref j);
                 }
                 totalPointCount++;
@@ -254,6 +256,20 @@ namespace UnityLive2DExtractor
                 totalUserDataSize += @event.value.Length;
             }
             Meta.TotalUserDataSize = totalUserDataSize;
+        }
+
+        private static Keyframe<float> CreateKeyFrame(ImportedKeyframe<float> iKeyframe)
+        {
+            return new Keyframe<float>
+            {
+                time = iKeyframe.time,
+                value = iKeyframe.value,
+                inSlope = iKeyframe.inSlope,
+                outSlope = iKeyframe.outSlope,
+                weightedMode = 0,
+                inWeight = 0,
+                outWeight = 0,
+            };
         }
     }
 }

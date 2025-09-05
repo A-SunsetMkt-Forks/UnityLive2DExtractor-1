@@ -1,4 +1,4 @@
-﻿namespace AssetStudio
+﻿namespace UnityLive2DExtractor.Utilities
 {
     public enum ImageFormat
     {

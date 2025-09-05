@@ -4,7 +4,7 @@
         <OutputType>Exe</OutputType>
         <Version>1.0.8.0</Version>
         <AssemblyTitle>UnityLive2DExtractorMod by aelurum</AssemblyTitle>
-        <Copyright>Copyright © Perfare 2019-2022; Copyright © aelurum 2022-2023</Copyright>
+        <Copyright>Copyright © Perfare 2019-2022; Copyright © aelurum 2022-2025</Copyright>
         <PlatformTarget>AnyCPU</PlatformTarget>
         <DebugType>embedded</DebugType>
     </PropertyGroup>

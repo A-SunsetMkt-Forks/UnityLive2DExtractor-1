@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using AssetStudio;
 
@@ -11,14 +10,21 @@ namespace UnityLive2DExtractor
         private Dictionary<uint, string> bonePathHash = new Dictionary<uint, string>();
         public List<ImportedKeyframedAnimation> AnimationList { get; protected set; } = new List<ImportedKeyframedAnimation>();
 
-        public CubismMotion3Converter(GameObject rootGameObject, AnimationClip[] animationClips)
+        public CubismMotion3Converter(GameObject rootGameObject, List<AnimationClip> animationClips)
         {
             var rootTransform = GetTransform(rootGameObject);
             CreateBonePathHash(rootTransform);
             ConvertAnimations(animationClips);
         }
 
-        private void ConvertAnimations(AnimationClip[] animationClips)
+        public CubismMotion3Converter(List<AnimationClip> animationClips, HashSet<string> partIds, HashSet<string> parameterIds)
+        {
+            CreateBonePathHash(partIds, pathType: "Parts/");
+            CreateBonePathHash(parameterIds, pathType: "Parameters/");
+            ConvertAnimations(animationClips);
+        }
+
+        private void ConvertAnimations(List<AnimationClip> animationClips)
         {
             foreach (var animationClip in animationClips)
             {
@@ -27,13 +33,13 @@ namespace UnityLive2DExtractor
                 iAnim.Name = animationClip.m_Name;
                 iAnim.SampleRate = animationClip.m_SampleRate;
                 iAnim.Duration = animationClip.m_MuscleClip.m_StopTime;
-                var m_Clip = animationClip.m_MuscleClip.m_Clip;
+                var m_Clip = animationClip.m_MuscleClip.m_Clip.data;
                 var streamedFrames = m_Clip.m_StreamedClip.ReadData();
                 var m_ClipBindingConstant = animationClip.m_ClipBindingConstant ?? m_Clip.ConvertValueArrayToGenericBinding();
                 for (int frameIndex = 1; frameIndex < streamedFrames.Count - 1; frameIndex++)
                 {
                     var frame = streamedFrames[frameIndex];
-                    for (int curveIndex = 0; curveIndex < frame.keyList.Length; curveIndex++)
+                    for (int curveIndex = 0; curveIndex < frame.keyList.Count; curveIndex++)
                     {
                         ReadStreamedData(iAnim, m_ClipBindingConstant, frame.time, frame.keyList[curveIndex]);
                     }
@@ -73,7 +79,7 @@ namespace UnityLive2DExtractor
 
                 if (iAnim.TrackList.Count == 0 || iAnim.Events.Count == 0)
                 {
-                    Console.WriteLine($"{iAnim.Name} has {iAnim.TrackList.Count} tracks and {iAnim.Events.Count} event!.");
+                    Console.WriteLine($"[Motion Converter] \"{iAnim.Name}\" has {iAnim.TrackList.Count} tracks and {iAnim.Events.Count} event!.");
                 }
             }
         }
@@ -84,7 +90,7 @@ namespace UnityLive2DExtractor
             GetLive2dPath(binding, out var target, out var boneName);
             if (string.IsNullOrEmpty(boneName))
             {
-                Console.WriteLine($"{iAnim.Name} read fail on binding {Array.IndexOf(m_ClipBindingConstant.genericBindings, binding)}");
+                Console.WriteLine($"[Motion Converter] \"{iAnim.Name}\" read fail on binding {m_ClipBindingConstant.genericBindings.FindIndex(x => x == binding)}");
                 return;
             }
 
@@ -99,7 +105,7 @@ namespace UnityLive2DExtractor
             GetLive2dPath(binding, out var target, out var boneName);
             if (string.IsNullOrEmpty(boneName))
             {
-                Console.WriteLine($"{iAnim.Name} read fail on binding {Array.IndexOf(m_ClipBindingConstant.genericBindings, binding)}");
+                Console.WriteLine($"[Motion Converter] \"{iAnim.Name}\" read fail on binding {m_ClipBindingConstant.genericBindings.FindIndex(x => x == binding)}");
                 return;
             }
 
@@ -161,21 +167,30 @@ namespace UnityLive2DExtractor
             return null;
         }
 
+        private void CreateBonePathHash(HashSet<string> ids, string pathType)
+        {
+            foreach (var id in ids)
+            {
+                var name = pathType + id; ;
+                bonePathHash[GetCRC(name)] = name;
+                int index;
+                while ((index = name.IndexOf("/", StringComparison.Ordinal)) >= 0)
+                {
+                    name = name.Substring(index + 1);
+                    bonePathHash[GetCRC(name)] = name;
+                }
+            }
+        }
+
         private void CreateBonePathHash(Transform m_Transform)
         {
             var name = GetTransformPath(m_Transform);
-            var crc = new SevenZip.CRC();
-            var bytes = Encoding.UTF8.GetBytes(name);
-            crc.Update(bytes, 0, (uint)bytes.Length);
-            bonePathHash[crc.GetDigest()] = name;
+            bonePathHash[GetCRC(name)] = name;
             int index;
             while ((index = name.IndexOf("/", StringComparison.Ordinal)) >= 0)
             {
                 name = name.Substring(index + 1);
-                crc = new SevenZip.CRC();
-                bytes = Encoding.UTF8.GetBytes(name);
-                crc.Update(bytes, 0, (uint)bytes.Length);
-                bonePathHash[crc.GetDigest()] = name;
+                bonePathHash[GetCRC(name)] = name;
             }
             foreach (var pptr in m_Transform.m_Children)
             {
@@ -184,7 +199,13 @@ namespace UnityLive2DExtractor
             }
         }
 
-        private string GetTransformPath(Transform transform)
+        private static uint GetCRC(string name)
+        {
+            var bytes = Encoding.UTF8.GetBytes(name);
+            return SevenZip.CRC.CalculateDigest(bytes, 0, (uint)bytes.Length);
+        }
+
+        private static string GetTransformPath(Transform transform)
         {
             transform.m_GameObject.TryGet(out var m_GameObject);
             if (transform.m_Father.TryGet(out var father))
