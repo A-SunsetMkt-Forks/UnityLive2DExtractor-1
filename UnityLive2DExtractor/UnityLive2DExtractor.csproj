@@ -37,12 +37,22 @@
         <Copy SourceFiles="$(SolutionDir)Texture2DDecoderNative\bin\$(Configuration)\x64\Texture2DDecoderNative.dll" DestinationFolder="$(TargetDir)runtimes\win-x64\native" ContinueOnError="false" />
     </Target>
 
+    <Target Name="CopyExtraFilesPortableNet" AfterTargets="AfterBuild" Condition=" '$(RuntimeIdentifier)' == '' AND '$(TargetFramework)' != 'net472' ">
+        <Message Text="Copying other platforms extra files for $(TargetFramework)... " Importance="high" />
+        <Copy SourceFiles="$(ProjectDir)Libraries\linux-arm64\libTexture2DDecoderNative.so" DestinationFolder="$(TargetDir)runtimes\linux-arm64\native" ContinueOnError="false" />
+    </Target>
+
     <!-- Publishing an app as framework-dependent produces a cross-platform binary as a dll file, and a platform-specific executable that targets your current platform.
     The dll is cross-platform while the executable isn't -->
     <Target Name="PublishExtraFilesPortable" AfterTargets="Publish" Condition=" '$(RuntimeIdentifier)' == '' ">
         <Message Text="Publishing extra files for Portable build ($(TargetFramework))... " Importance="high" />
         <Copy SourceFiles="$(TargetDir)runtimes\win-x86\native\Texture2DDecoderNative.dll" DestinationFolder="$(PublishDir)runtimes\win-x86\native" ContinueOnError="false" />
         <Copy SourceFiles="$(TargetDir)runtimes\win-x64\native\Texture2DDecoderNative.dll" DestinationFolder="$(PublishDir)runtimes\win-x64\native" ContinueOnError="false" />
+    </Target>
+
+    <Target Name="PublishExtraFilesPortableNet" AfterTargets="Publish" Condition=" '$(RuntimeIdentifier)' == '' AND '$(TargetFramework)' != 'net472' ">
+        <Message Text="Publishing other platforms extra files for Portable build ($(TargetFramework))... " Importance="high" />
+        <Copy SourceFiles="$(TargetDir)runtimes\linux-arm64\native\libTexture2DDecoderNative.so" DestinationFolder="$(PublishDir)runtimes\linux-arm64\native" ContinueOnError="false" />
     </Target>
 
     <Target Name="CopyExtraFilesWin86" AfterTargets="AfterBuild" Condition=" '$(RuntimeIdentifier)' == 'win-x86' ">
