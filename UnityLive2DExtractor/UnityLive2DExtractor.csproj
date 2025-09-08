@@ -2,7 +2,7 @@
     <PropertyGroup>
         <TargetFrameworks>net472;net8.0;net9.0</TargetFrameworks>
         <OutputType>Exe</OutputType>
-        <Version>1.0.8.0</Version>
+        <Version>2.0.0.0</Version>
         <AssemblyTitle>UnityLive2DExtractorMod by aelurum</AssemblyTitle>
         <Copyright>Copyright © Perfare 2019-2022; Copyright © aelurum 2022-2025</Copyright>
         <PlatformTarget>AnyCPU</PlatformTarget>
@@ -15,11 +15,11 @@
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     </ItemGroup>
     <ItemGroup Condition="'$(TargetFramework)' != 'net472'">
-        <PackageReference Include="SixLabors.ImageSharp" Version="3.1.1" />
+        <PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
         <PackageReference Include="Kyaru.Texture2DDecoder" Version="0.17.0" />
     </ItemGroup>
     <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
-        <PackageReference Include="SixLabors.ImageSharp" Version="2.1.4" />
+        <PackageReference Include="SixLabors.ImageSharp" Version="2.1.11" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\AssetStudio\AssetStudio.csproj" />
@@ -30,7 +30,6 @@
     </ItemGroup>
 
     <!-- Use local compiled win-x86 and win-x64 Texture2DDecoder libs, because libs from Kyaru.Texture2DDecoder.Windows were compiled with /MD flag -->
-    
     <Target Name="CopyExtraFilesPortable" AfterTargets="AfterBuild" Condition=" '$(RuntimeIdentifier)' == '' ">
         <Message Text="Copying extra files for $(TargetFramework) build... " Importance="high" />
         <Copy SourceFiles="$(SolutionDir)Texture2DDecoderNative\bin\$(Configuration)\Win32\Texture2DDecoderNative.dll" DestinationFolder="$(TargetDir)runtimes\win-x86\native" ContinueOnError="false" />
@@ -59,15 +58,15 @@
         <Message Text="Copying extra files for $(RuntimeIdentifier)($(TargetFramework))... " Importance="high" />
         <Copy SourceFiles="$(SolutionDir)Texture2DDecoderNative\bin\$(Configuration)\Win32\Texture2DDecoderNative.dll" DestinationFolder="$(TargetDir)" ContinueOnError="false" />
     </Target>
-    
+
     <Target Name="CopyExtraFilesWin64" AfterTargets="AfterBuild" Condition=" '$(RuntimeIdentifier)' == 'win-x64' ">
         <Message Text="Copying extra files for $(RuntimeIdentifier)($(TargetFramework))... " Importance="high" />
         <Copy SourceFiles="$(SolutionDir)Texture2DDecoderNative\bin\$(Configuration)\x64\Texture2DDecoderNative.dll" DestinationFolder="$(TargetDir)" ContinueOnError="false" />
     </Target>
-    
+
     <Target Name="PublishExtraFilesWin" AfterTargets="Publish" Condition=" $(RuntimeIdentifier.Contains('win-x')) ">
         <Message Text="Publishing extra files for $(RuntimeIdentifier)($(TargetFramework))... " Importance="high" />
         <Copy SourceFiles="$(TargetDir)Texture2DDecoderNative.dll" DestinationFolder="$(PublishDir)" ContinueOnError="false" />
     </Target>
-    
+
 </Project>
